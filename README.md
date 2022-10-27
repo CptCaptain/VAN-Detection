@@ -1,7 +1,9 @@
-# Visual Attention Network (VAN) for Segmentaion
+# Visual Attention Network (VAN) for Detection
 
-This repo is a PyTorch implementation of applying **VAN** (**Visual Attention Network**) to semantic segmentation.
-The code is based on [mmsegmentaion](https://github.com/open-mmlab/mmsegmentation/tree/v0.12.0).
+This repo is a PyTorch implementation of applying **VAN** (**Visual Attention Network**) to 2D Object Detection.
+The code is based on [mmdet](https://github.com/open-mmlab/mmdetection).
+
+## THIS IS STILL VERY MUCH **WIP**
 
 More details can be found in [**Visual Attention Network**](https://arxiv.org/abs/2202.09741).
 
@@ -46,12 +48,12 @@ More details can be found in [**Visual Attention Network**](https://arxiv.org/ab
 
 ## Preparation
 
-Install MMSegmentation and download ADE20K according to the guidelines in MMSegmentation.
+Install MMDetection and download COCO according to the guidelines in MMDetection.
 
 ## Requirement
 
 ```
-pip install mmsegmentation==0.26.0 (https://github.com/open-mmlab/mmsegmentation/tree/v0.26.0)
+pip install wandb timm pycocotools mmcv-full==1.6.2 mmdet==2.25.2
 ```
 
 ## Training
@@ -67,7 +69,7 @@ We use 8 GPUs for training by default. Run:
 To evaluate the model, run:
 
 ```bash
-./dist_test.sh /path/to/config /path/to/checkpoint_file 8 --eval mIoU
+./dist_test.sh /path/to/config /path/to/checkpoint_file 8 --eval bbox
 ```
 
 ## FLOPs
@@ -87,7 +89,7 @@ bash tools/flops.sh /path/to/config --shape 512 512
 
 ## Acknowledgment
 
-Our implementation is mainly based on [mmsegmentaion](https://github.com/open-mmlab/mmsegmentation/tree/v0.12.0), [Swin-Transformer](https://github.com/SwinTransformer/Swin-Transformer-Semantic-Segmentation), [PoolFormer](https://github.com/sail-sg/poolformer), and [Enjoy-Hamburger](https://github.com/Gsunshine/Enjoy-Hamburger). Thanks for their authors.
+Our implementation is mainly based on [VAN-Segmentation](https://github.com/Visual-Attention-Network/VAN-Segmentation). Thanks to the authors.
 
 ## LICENSE
 
