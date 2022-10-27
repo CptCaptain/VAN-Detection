@@ -15,7 +15,7 @@ log_config = dict(
           log_checkpoint_metadata=True,
           num_eval_images=10,
         ), # Check https://docs.wandb.ai/ref/python/init for more init arguments.
-        # MMSegWandbHook is mmseg implementation of WandbLoggerHook. ClearMLLoggerHook, DvcliveLoggerHook, MlflowLoggerHook, NeptuneLoggerHook, PaviLoggerHook, SegmindLoggerHook are also supported based on MMCV implementation.
+        # MMDetWandbHook is mmdet implementation of WandbLoggerHook. ClearMLLoggerHook, DvcliveLoggerHook, MlflowLoggerHook, NeptuneLoggerHook, PaviLoggerHook, SegmindLoggerHook are also supported based on MMCV implementation.
     ])
 # yapf:enable
 dist_params = dict(backend='nccl')
