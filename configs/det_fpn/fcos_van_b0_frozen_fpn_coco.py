@@ -2,19 +2,13 @@ _base_ = [
     'fcos_van_b0_fpn_coco.py',
 ]
 
-dims = [64, 128, 320, 512]
-
-# model settings
 model = dict(
     backbone=dict(
-        embed_dims=dims,
-        depths=[3, 3, 12, 3],
-        init_cfg=dict(type='Pretrained', checkpoint='/content/models/van_small_811.pth.tar'),
-        drop_path_rate=0.2,
-        act_layer='GELU',
-        ),
-    neck=dict(in_channels=dims),
+        init_cfg=dict(type='Pretrained', checkpoint='/content/models/van_tiny_754.pth.tar'),
+        frozen=True,
+      ),
     )
+
 
 log_config = dict(
     hooks=[
@@ -25,10 +19,11 @@ log_config = dict(
             entity="nkoch-aitastic",
             project='van-detection', 
             tags=[
-              'backbone:VAN-B2', 
+              'backbone:VAN-B0', 
               'neck:FPN',
               'head:FCOS', 
               'pretrained',
+              'frozen-backbone'
               ]       
           ),
           interval=10,
@@ -38,5 +33,5 @@ log_config = dict(
         ), # Check https://docs.wandb.ai/ref/python/init for more init arguments.
     ])
 
+  
 
-data = dict(samples_per_gpu=1)

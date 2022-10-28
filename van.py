@@ -13,6 +13,25 @@ import math
 import warnings
 
 
+class StarReLU(nn.Module):
+    """
+    StarReLU: s * relu(x) ** 2 + b
+    Graciously taken from https://github.com/sail-sg/metaformer/blob/main/metaformer_baselines.py
+    """
+    def __init__(self, scale_value=1.0, bias_value=0.0,
+        scale_learnable=True, bias_learnable=True, 
+        mode=None, inplace=False):
+        super().__init__()
+        self.inplace = inplace
+        self.relu = nn.ReLU(inplace=inplace)
+        self.scale = nn.Parameter(scale_value * torch.ones(1),
+            requires_grad=scale_learnable)
+        self.bias = nn.Parameter(bias_value * torch.ones(1),
+            requires_grad=bias_learnable)
+    def forward(self, x):
+        return self.scale * self.relu(x)**2 + self.bias
+
+
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0., linear=False):
         super().__init__()
@@ -56,11 +75,11 @@ class AttentionModule(nn.Module):
 
 
 class SpatialAttention(nn.Module):
-    def __init__(self, d_model):
+    def __init__(self, d_model, act_layer=nn.GELU):
         super().__init__()
         self.d_model = d_model
         self.proj_1 = nn.Conv2d(d_model, d_model, 1)
-        self.activation = nn.GELU()
+        self.activation = act_layer()
         self.spatial_gating_unit = AttentionModule(d_model)
         self.proj_2 = nn.Conv2d(d_model, d_model, 1)
 
@@ -86,7 +105,7 @@ class Block(nn.Module):
                  norm_cfg=dict(type='SyncBN', requires_grad=True)):
         super().__init__()
         self.norm1 = build_norm_layer(norm_cfg, dim)[1]
-        self.attn = SpatialAttention(dim)
+        self.attn = SpatialAttention(dim, act_layer=act_layer)
         self.drop_path = DropPath(
             drop_path) if drop_path > 0. else nn.Identity()
 
@@ -148,12 +167,18 @@ class VAN(BaseModule):
                  drop_path_rate=0.,
                  depths=[3, 4, 6, 3],
                  num_stages=4,
+                 act_layer='GELU',
                  linear=False,
                  pretrained=None,
                  init_cfg=None,
                  frozen=False,
                  norm_cfg=dict(type='SyncBN', requires_grad=True)):
         super(VAN, self).__init__(init_cfg=init_cfg)
+
+        if act_layer == 'StarReLU':
+          act_layer = StarReLU
+        else:
+          act_layer = nn.GELU
 
         assert not (init_cfg and pretrained), \
             'init_cfg and pretrained cannot be set at the same time'
@@ -182,6 +207,7 @@ class VAN(BaseModule):
                                          mlp_ratio=mlp_ratios[i],
                                          drop=drop_rate,
                                          drop_path=dpr[cur + j],
+                                         act_layer=act_layer,
                                          linear=linear,
                                          norm_cfg=norm_cfg)
                                    for j in range(depths[i])])
@@ -191,6 +217,11 @@ class VAN(BaseModule):
             setattr(self, f"patch_embed{i + 1}", patch_embed)
             setattr(self, f"block{i + 1}", block)
             setattr(self, f"norm{i + 1}", norm)
+
+        if frozen:
+          # Freeze Params for faster Training, I guess
+          for param in self.parameters:
+            param.requires_grad = False
 
     def init_weights(self):
         print('init cfg', self.init_cfg)

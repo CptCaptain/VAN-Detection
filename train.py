@@ -227,7 +227,7 @@ def main():
         # save mmseg version, config file content and class names in
         # checkpoints as meta data
         cfg.checkpoint_config.meta = dict(
-            mmseg_version=f'{__version__}+{get_git_hash()[:7]}',
+            mmdet_version=f'{__version__}+{get_git_hash()[:7]}',
             config=cfg.pretty_text,
             CLASSES=datasets[0].CLASSES,
             PALETTE=datasets[0].PALETTE)
@@ -246,5 +246,4 @@ def main():
 
 
 if __name__ == '__main__':
-    # wandb.init(project="van-segmentation", entity="nkoch-aitastic")
     main()
