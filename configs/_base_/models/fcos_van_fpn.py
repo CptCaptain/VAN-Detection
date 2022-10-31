@@ -11,6 +11,7 @@ model = dict(
         drop_path_rate=0.1,
         depths=[3, 3, 5, 2],
         norm_cfg=norm_cfg,
+        act_layer='GELU',
       ),
     # backbone=dict(
     #     type='ResNet',

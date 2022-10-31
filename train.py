@@ -205,6 +205,11 @@ def main():
         test_cfg=cfg.get('test_cfg'))
     model.init_weights()
 
+    if 'frozen' in cfg.model.backbone and cfg.model.backbone.frozen:
+      # Freeze Params for faster Training, I guess
+      for param in model.backbone.parameters():
+        param.requires_grad = False
+        
     wandb.config = cfg
     # wandb.watch(model)
 

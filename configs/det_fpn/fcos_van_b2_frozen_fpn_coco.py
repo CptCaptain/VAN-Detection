@@ -1,11 +1,11 @@
 _base_ = [
-    'fcos_van_b0_fpn_coco.py',
+    'fcos_van_b2_fpn_coco.py',
 ]
 
 norm_cfg = dict(type='SyncBN', requires_grad=False)
 model = dict(
     backbone=dict(
-        # init_cfg=dict(type='Pretrained', checkpoint='/content/models/van_tiny_754.pth.tar'),
+        init_cfg=dict(type='Pretrained', checkpoint='/content/models/van_small_811.pth.tar'),
         frozen=True,
         norm_cfg=norm_cfg,
       ),
@@ -21,7 +21,7 @@ log_config = dict(
             entity="nkoch-aitastic",
             project='van-detection', 
             tags=[
-              'backbone:VAN-B0', 
+              'backbone:VAN-B2', 
               'neck:FPN',
               'head:FCOS', 
               'pretrained',

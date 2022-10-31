@@ -46,4 +46,3 @@ data = dict(
         ann_file=data_root + 'annotations/instances_test2017.json',
         img_prefix=data_root + 'test2017/',
         pipeline=test_pipeline))
-evaluation = dict(interval=1, metric='bbox')

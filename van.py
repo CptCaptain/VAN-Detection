@@ -218,11 +218,6 @@ class VAN(BaseModule):
             setattr(self, f"block{i + 1}", block)
             setattr(self, f"norm{i + 1}", norm)
 
-        if frozen:
-          # Freeze Params for faster Training, I guess
-          for param in self.parameters:
-            param.requires_grad = False
-
     def init_weights(self):
         print('init cfg', self.init_cfg)
         if self.init_cfg is None:
