@@ -2,12 +2,12 @@ _base_ = [
     'fcos_van_b0_fpn_coco.py',
 ]
 
-norm_cfg = dict(type='SyncBN', requires_grad=False)
 model = dict(
+    type='FCOS',
     backbone=dict(
+        # This is new, taken from MetaFromer baselines for Vision
+        act_layer='StarReLU',
         init_cfg=dict(type='Pretrained', checkpoint='models/van_tiny_754.pth.tar'),
-        frozen=True,
-        norm_cfg=norm_cfg,
       ),
     )
 
@@ -25,7 +25,7 @@ log_config = dict(
               'neck:FPN',
               'head:FCOS', 
               'pretrained',
-              'frozen-backbone'
+              'StarReLU',
               ]       
           ),
           interval=10,
@@ -36,4 +36,3 @@ log_config = dict(
     ])
 
   
-

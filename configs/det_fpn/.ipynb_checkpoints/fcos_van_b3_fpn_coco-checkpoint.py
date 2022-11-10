@@ -2,15 +2,21 @@ _base_ = [
     'fcos_van_b0_fpn_coco.py',
 ]
 
-norm_cfg = dict(type='SyncBN', requires_grad=False)
+
+# TODO figure out size of B3
+dims = [64, 128, 320, 512]
+
+# model settings
 model = dict(
     backbone=dict(
-        init_cfg=dict(type='Pretrained', checkpoint='models/van_tiny_754.pth.tar'),
-        frozen=True,
-        norm_cfg=norm_cfg,
-      ),
+        embed_dims=dims,
+        depths=[3, 3, 12, 3],
+        init_cfg=dict(type='Pretrained', checkpoint='/content/models/van_large_839.pth.tar'),
+        drop_path_rate=0.2,
+        act_layer='GELU',
+        ),
+    neck=dict(in_channels=dims),
     )
-
 
 log_config = dict(
     hooks=[
@@ -21,11 +27,10 @@ log_config = dict(
             entity="nkoch-aitastic",
             project='van-detection', 
             tags=[
-              'backbone:VAN-B0', 
+              'backbone:VAN-B2', 
               'neck:FPN',
               'head:FCOS', 
               'pretrained',
-              'frozen-backbone'
               ]       
           ),
           interval=10,
@@ -35,5 +40,5 @@ log_config = dict(
         ), # Check https://docs.wandb.ai/ref/python/init for more init arguments.
     ])
 
-  
 
+data = dict(samples_per_gpu=1)

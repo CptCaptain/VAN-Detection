@@ -6,14 +6,14 @@ _base_ = [
 ##
 # Hmm, StarReLU seems borked in this, loss is often NaN
 ##
-norm_cfg = dict(type='SyncBN', requires_grad=False)
+# norm_cfg = dict(type='SyncBN', requires_grad=False)
 dims = [64, 128, 320, 512]
 model = dict(
     backbone=dict(
         # init_cfg=dict(type='Pretrained', checkpoint='/content/models/van_small_811.pth.tar'),
         init_cfg=None,
-        act_layer='StarReLU',
-        norm_cfg=norm_cfg,
+        # act_layer='StarReLU',
+        # norm_cfg=norm_cfg,
       ),
     neck=[
         dict(

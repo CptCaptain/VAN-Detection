@@ -6,8 +6,16 @@ PORT=${PORT:-29500}
 MASTER_ADDR=${MASTER_ADDR:-"127.0.0.1"}
 
 PYTHONPATH="$(dirname $0)/..":$PYTHONPATH \
-torchrun train.py $CONFIG
+# torchrun train.py $CONFIG
 
+torchrun \
+    --nnodes=$NNODES \
+    --node_rank=$NODE_RANK \
+    --rdzv_endpoint=$MASTER_ADDR:$PORT \
+    --nproc_per_node=$GPUS \
+    $(dirname "$0")/train.py \
+    $CONFIG \
+    --launcher pytorch ${@:3}
 # python -m torch.distributed.launch \
 #     --nnodes=$NNODES \
 #     --node_rank=$NODE_RANK \

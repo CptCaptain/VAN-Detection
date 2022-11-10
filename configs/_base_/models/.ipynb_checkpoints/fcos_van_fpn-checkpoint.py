@@ -1,14 +1,6 @@
-_base_ = [
-    '../_base_/models/fcos_van_fpn.py',
-    '../_base_/datasets/coco_detection.py',
-    '../_base_/default_runtime.py',    
-    '../_base_/schedules/schedule_4k.py',
-]
-
+# model settings
+norm_cfg = dict(type='SyncBN', requires_grad=True)
 dims = [32, 64, 160, 256]
-pretrained = dict(type='Pretrained', checkpoint='models/van_tiny_754.pth.tar')
-norm_cfg = dict(type='SyncBN', requires_grad=not bool(pretrained))  # train BN only when not using pretrained model
-
 
 model = dict(
     type='FCOS',
@@ -19,8 +11,19 @@ model = dict(
         drop_path_rate=0.1,
         depths=[3, 3, 5, 2],
         norm_cfg=norm_cfg,
-        init_cfg=pretrained,
       ),
+    # backbone=dict(
+    #     type='ResNet',
+    #     depth=50,
+    #     num_stages=4,
+    #     out_indices=(0, 1, 2, 3),
+    #     frozen_stages=1,
+    #     norm_cfg=dict(type='BN', requires_grad=False),
+    #     norm_eval=True,
+    #     style='caffe',
+    #     init_cfg=dict(
+    #         type='Pretrained',
+    #         checkpoint='open-mmlab://detectron/resnet50_caffe')),
     neck=dict(
         type='FPN',
         in_channels=dims,
@@ -61,31 +64,5 @@ model = dict(
         min_bbox_size=0,
         score_thr=0.05,
         nms=dict(type='nms', iou_threshold=0.5),
-        max_per_img=100)
-        )
+        max_per_img=100))
 
-
-log_config = dict(
-    interval=10,
-    hooks=[
-        dict(type='TextLoggerHook', by_epoch=True),
-        dict(type='MMDetWandbHook', 
-          by_epoch=True, 
-          init_kwargs=dict(
-            entity="nkoch-aitastic",
-            project='van-detection', 
-            tags=[
-              'backbone:VAN-B0', 
-              'neck:FPN',
-              'head:FCOS', 
-              'pretrained',
-              ]       
-          ),
-          log_checkpoint=True,
-          log_checkpoint_metadata=True,
-          num_eval_images=100,
-        ), # Check https://docs.wandb.ai/ref/python/init for more init arguments.
-    ])
-
-  
-data = dict(samples_per_gpu=4)

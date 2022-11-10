@@ -2,7 +2,8 @@ _base_ = [
     '../_base_/models/fcos_van_fpn.py',
     '../_base_/datasets/coco_detection.py',
     '../_base_/default_runtime.py',    
-    '../_base_/schedules/schedule_4k.py',
+    # '../_base_/schedules/schedule_4k.py',
+    '../_base_/schedules/schedule_1x_adam.py',
 ]
 
 dims = [32, 64, 160, 256]
@@ -66,7 +67,6 @@ model = dict(
 
 
 log_config = dict(
-    interval=10,
     hooks=[
         dict(type='TextLoggerHook', by_epoch=True),
         dict(type='MMDetWandbHook', 
@@ -79,8 +79,10 @@ log_config = dict(
               'neck:FPN',
               'head:FCOS', 
               'pretrained',
+              'schedule:1x',
               ]       
           ),
+          interval=10,
           log_checkpoint=True,
           log_checkpoint_metadata=True,
           num_eval_images=100,
