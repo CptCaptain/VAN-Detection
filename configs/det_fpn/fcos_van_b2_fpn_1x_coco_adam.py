@@ -3,16 +3,11 @@ _base_ = [
 ]
 
 dims = [64, 128, 320, 512]
+pretrained = dict(type='Pretrained', checkpoint='models/van-base_8xb128_in1k_20220501-6a4cc31b.pth')
 
 # model settings
 model = dict(
-    backbone=dict(
-        embed_dims=dims,
-        depths=[3, 3, 12, 3],
-        init_cfg=dict(type='Pretrained', checkpoint='models/van_small_811.pth.tar'),
-        drop_path_rate=0.2,
-        act_layer='GELU',
-        ),
+    backbone=dict(type='VAN', _delete=True, arch='b2', drop_path_rate=0.1),
     neck=dict(in_channels=dims),
     )
 
