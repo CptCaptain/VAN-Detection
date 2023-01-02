@@ -115,6 +115,7 @@ def parse_args():
 
 
 def main():
+    wandb.require('service')
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
