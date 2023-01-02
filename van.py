@@ -176,9 +176,9 @@ class VAN(BaseModule):
         super(VAN, self).__init__(init_cfg=init_cfg)
 
         if act_layer == 'StarReLU':
-          act_layer = StarReLU
+            act_layer = StarReLU
         else:
-          act_layer = nn.GELU
+            act_layer = nn.GELU
 
         assert not (init_cfg and pretrained), \
             'init_cfg and pretrained cannot be set at the same time'
