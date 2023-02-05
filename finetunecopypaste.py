@@ -58,7 +58,6 @@ class FineTuneCopyPaste:
         self.selected = selected
 
     def _get_supl_dataset(self, dataset_cfg):
-        # FIXME get config from actual pipeline config? At least partly
         cfg_dict = dict(
             type='MultiImageMixDataset',
             dataset=dict(
@@ -70,9 +69,6 @@ class FineTuneCopyPaste:
                 classes=dataset_cfg['classes'],
                 filter_empty_gt=False,
             ),
-            # ann_file=dataset_cfg['ann_file'],
-            # data_root=dataset_cfg['data_root'],
-            # img_prefix=dataset_cfg['img_prefix'],
             pipeline=dataset_cfg['pipeline'],
             skip_type_keys=['Resize'],
         )
@@ -86,7 +82,10 @@ class FineTuneCopyPaste:
         Returns:
             list: Indexes.
         """
-        return random.randint(0, len(dataset))
+        # return random.randint(0, len(dataset))
+        # FIXME len -1 due to IndexErrors in the iterator. But Why?
+        # https://wandb.ai/nkoch-aitastic/van-detection/runs/3lvi3hql/logs?
+        return random.randint(0, len(dataset)-1)
 
     def __call__(self, results):
         """Call function to make a copy-paste of image.
