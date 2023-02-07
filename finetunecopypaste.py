@@ -49,7 +49,7 @@ class FineTuneCopyPaste:
     def __init__(
         self,
         supl_dataset_cfg=None,
-        copy_paste_chance=0.6,
+        copy_paste_chance=0.3,
         max_num_pasted=100,
         bbox_occluded_thr=10,
         mask_occluded_thr=300,
