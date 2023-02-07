@@ -28,6 +28,12 @@ class FineTuneCopyPaste:
        which are partly occluded.
     7. Append selected source bboxes, masks, and labels.
     Args:
+        supl_dataset_cfg (dict): Dataset config to be used for the supplemental
+            Dataset. Includes Pipeline.
+            Default: None.      (set this yourself)
+        copy_paste_chance (float): Apply this only to a subset of images to avoid
+            severely unbalancing the dataset.
+            Default: 0.3.
         max_num_pasted (int): The maximum number of pasted objects.
             Default: 100.
         bbox_occluded_thr (int): The threshold of occluded bbox.
@@ -43,6 +49,7 @@ class FineTuneCopyPaste:
     def __init__(
         self,
         supl_dataset_cfg=None,
+        copy_paste_chance=0.6,
         max_num_pasted=100,
         bbox_occluded_thr=10,
         mask_occluded_thr=300,
@@ -52,6 +59,7 @@ class FineTuneCopyPaste:
             raise Exception('Supplementary Dataset Path is required for fine-tune copy paste augmentation')
 
         self._get_supl_dataset(supl_dataset_cfg)
+        self.copy_paste_chance = copy_paste_chance
         self.max_num_pasted = max_num_pasted
         self.bbox_occluded_thr = bbox_occluded_thr
         self.mask_occluded_thr = mask_occluded_thr
@@ -94,16 +102,10 @@ class FineTuneCopyPaste:
         Returns:
             dict: Result dict with copy-paste transformed.
         """
-
-        # assert 'mix_results' in results
-        # num_images = len(results['mix_results'])
-        # assert num_images == 1, \
-            # f'CopyPaste only supports processing 2 images, got {num_images}'
-        # if self.selected:
-            # selected_results = self._select_object(results['mix_results'][0])
-        # else:
-            # selected_results = results['mix_results'][0]
-        # return self._copy_paste(results, selected_results)
+        # only apply to limited amount of images
+        if random.uniform(0, 1) > self.copy_paste_chance:
+            return results
+            
         supl_idx = random.randint(0, len(self.supl_dataset)-1)
         supl_item = self.supl_dataset.__getitem__(supl_idx)
         return self._copy_paste(results, supl_item)
