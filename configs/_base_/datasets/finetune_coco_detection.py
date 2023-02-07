@@ -1,3 +1,4 @@
+
 custom_imports = dict(imports=['finetunecopypaste'], allow_failed_imports=False)
 
 # _base_ = [
@@ -19,13 +20,19 @@ CLASSES = ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
                'vase', 'scissors', 'teddy bear', 'hair drier', 'Audi_RS_6_Avant')
 
 dataset_type = 'CocoDataset'
-data_root = 'datasets/coco/'
+# data_root = 'datasets/coco/'
+data_root = '/home/nils/VAN-Detection/datasets/coco/'
 image_size = (1024, 1024)
 file_client_args = dict(backend='disk')
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
 albu_train_transforms = [
+    dict(
+        type='Resize',
+        width=image_size[0],
+        height=image_size[1],
+        ),
     dict(
         type='ShiftScaleRotate',
         shift_limit=0.0625,
@@ -61,6 +68,18 @@ albu_train_transforms = [
             dict(type='MedianBlur', blur_limit=3, p=1.0)
         ],
         p=0.2),
+    dict(
+        type='ColorJitter',
+        ),
+    dict(
+        type='RandomCrop',
+        width=image_size[0],
+        height=image_size[1],
+        p=0.5,
+        ),
+    dict(
+        type='Flip'
+        ),
 ]
 
 load_pipeline = [
@@ -92,7 +111,8 @@ train_pipeline = [
             data_root='/home/nils/datasets/cars/',
             img_prefix='raw',
             pipeline=[
-                *load_pipeline,
+                dict(type='LoadImageFromFile', file_client_args=file_client_args),
+                dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
                 dict(
                     type='Albu',
                     transforms=albu_train_transforms,
@@ -103,11 +123,6 @@ train_pipeline = [
                         min_visibility=0.0,
                         filter_lost_elements=True,
                     ),
-                    # keymap={
-                        # 'img': 'image',
-                        # 'gt_masks': 'masks',
-                        # 'gt_bboxes': 'bboxes'
-                    # },
                     update_pad_shape=False,
                     skip_img_without_anno=True,
                 ),
