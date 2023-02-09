@@ -24,26 +24,44 @@ dataset_type = 'CocoDataset'
 data_root = '/home/nils/VAN-Detection/datasets/coco/'
 image_size = (1024, 1024)
 file_client_args = dict(backend='disk')
-img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 
 albu_train_transforms = [
     dict(
-        type='Resize',
-        width=image_size[0],
-        height=image_size[1],
-        ),
+        type='OneOf',
+        transforms=[
+            dict(
+                type='Resize',
+                width=image_size[0],
+                height=image_size[1],
+            ),
+            dict(
+                type='RandomResizedCrop',
+                width=image_size[0],
+                height=image_size[1],
+            ),
+        ],
+        p=1.0
+    ),
     dict(
         type='ShiftScaleRotate',
-        shift_limit=0.0625,
-        scale_limit=0.0,
-        rotate_limit=0,
+        # shift_limit=0.0625,
+        # scale_limit=0.0,
+        # rotate_limit=0,
+        border_mode=0,
+        rotate_method='ellipse',
         interpolation=1,
         p=0.5),
+    # dict(
+        # type='Rotate',
+        # rotate_method='ellipse',
+        # border_mode=0,
+        # p=0.5,
+    # ),
     dict(
         type='RandomBrightnessContrast',
-        brightness_limit=[0.1, 0.3],
-        contrast_limit=[0.1, 0.3],
+        # brightness_limit=[0.1, 0.3],
+        # contrast_limit=[0.1, 0.3],
         p=0.5),
     dict(
         type='OneOf',
@@ -53,32 +71,43 @@ albu_train_transforms = [
                 p=1.0),
             dict(
                 type='HueSaturationValue',
-                hue_shift_limit=80,
-                sat_shift_limit=30,
-                val_shift_limit=20,
-                p=1.0)
+                hue_shift_limit=128,
+                sat_shift_limit=128,
+                val_shift_limit=128,
+                p=1.0),
         ],
-        p=0.7),
-    dict(type='JpegCompression', quality_lower=85, quality_upper=95, p=0.3),
+        p=0.9),
+    dict(type='ImageCompression', quality_lower=45, quality_upper=95, p=0.3),
     dict(type='ChannelShuffle', p=0.3),
+    dict(type='GaussNoise', p=0.8),
     dict(
         type='OneOf',
         transforms=[
-            dict(type='Blur', blur_limit=3, p=1.0),
-            dict(type='MedianBlur', blur_limit=3, p=1.0)
+            dict(type='AdvancedBlur', p=1.0),
+            dict(type='MedianBlur', blur_limit=3, p=1.0),
         ],
-        p=0.2),
+        p=0.4),
     dict(
         type='ColorJitter',
         ),
     dict(
         type='RandomCrop',
-        width=image_size[0],
-        height=image_size[1],
-        p=0.5,
+        width=400,
+        height=400,
+        p=0.2,
         ),
     dict(
-        type='Flip'
+        type='OpticalDistortion',
+        ),
+    dict(
+        type='Flip',
+        ),
+    dict(
+        type='PadIfNeeded',
+        min_width=image_size[0],
+        min_height=image_size[1],
+        border_mode=0,
+        p=1.0,
         ),
 ]
 
