@@ -78,7 +78,7 @@ albu_train_transforms = [
         ],
         p=0.9),
     dict(type='ImageCompression', quality_lower=45, quality_upper=95, p=0.3),
-    dict(type='ChannelShuffle', p=0.3),
+    dict(type='ChannelShuffle', p=0.4),
     dict(type='GaussNoise', p=0.8),
     dict(
         type='OneOf',
@@ -97,7 +97,68 @@ albu_train_transforms = [
         p=0.2,
         ),
     dict(
-        type='OpticalDistortion',
+        type='Flip',
+        ),
+    dict(
+        type='PadIfNeeded',
+        min_width=image_size[0],
+        min_height=image_size[1],
+        border_mode=0,
+        p=1.0,
+        ),
+]
+
+albu_val_transforms = [
+    dict(
+        type='OneOf',
+        transforms=[
+            dict(
+                type='Resize',
+                width=image_size[0],
+                height=image_size[1],
+            ),
+            dict(
+                type='RandomResizedCrop',
+                width=image_size[0],
+                height=image_size[1],
+            ),
+        ],
+        p=1.0
+    ),
+    dict(
+        type='ShiftScaleRotate',
+        border_mode=0,
+        rotate_method='ellipse',
+        interpolation=1,
+        p=0.5),
+    dict(
+        type='RandomBrightnessContrast',
+        p=0.5),
+    dict(
+        type='OneOf',
+        transforms=[
+            dict(
+                type='RGBShift',
+                p=1.0),
+            dict(
+                type='HueSaturationValue',
+                hue_shift_limit=128,
+                sat_shift_limit=128,
+                val_shift_limit=128,
+                p=1.0),
+        ],
+        p=0.9),
+    dict(type='ChannelShuffle', p=0.3),
+    dict(type='GaussNoise', p=0.8),
+    dict(
+        type='OneOf',
+        transforms=[
+            dict(type='AdvancedBlur', p=1.0),
+            dict(type='MedianBlur', blur_limit=3, p=1.0),
+        ],
+        p=0.4),
+    dict(
+        type='ColorJitter',
         ),
     dict(
         type='Flip',
@@ -135,6 +196,7 @@ train_pipeline = [
     dict(
         type='FineTuneCopyPaste', 
         max_num_pasted=100,
+        copy_paste_chance=0.8,
         supl_dataset_cfg=dict(
             ann_file='/home/nils/datasets/cars/coco/train.json',
             data_root='/home/nils/datasets/cars/',
@@ -166,6 +228,34 @@ train_pipeline = [
 
 test_pipeline = [
     dict(type='LoadImageFromFile'),
+    # dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
+    # dict(
+        # type='FineTuneCopyPaste', 
+        # max_num_pasted=100,
+        # supl_dataset_cfg=dict(
+            # ann_file='/home/nils/datasets/cars/coco/val.json',
+            # data_root='/home/nils/datasets/cars/',
+            # img_prefix='raw',
+            # pipeline=[
+                # dict(type='LoadImageFromFile', file_client_args=file_client_args),
+                # dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
+                # dict(
+                    # type='Albu',
+                    # transforms=albu_val_transforms,
+                    # bbox_params=dict(
+                        # type='BboxParams',
+                        # format='pascal_voc',
+                        # label_fields=['gt_labels'],
+                        # min_visibility=0.0,
+                        # filter_lost_elements=True,
+                    # ),
+                    # update_pad_shape=False,
+                    # skip_img_without_anno=True,
+                # ),
+            # ],
+            # classes=CLASSES,
+        # ),
+    # ),
     dict(
         type='MultiScaleFlipAug',
         img_scale=(1333, 800),
@@ -175,7 +265,7 @@ test_pipeline = [
             dict(type='RandomFlip'),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32),
-            dict(type='ImageToTensor', keys=['img']),
+            dict(type='DefaultFormatBundle'),
             dict(type='Collect', keys=['img']),
         ])
 ]
