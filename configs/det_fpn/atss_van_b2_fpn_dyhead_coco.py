@@ -9,12 +9,12 @@ dims = [64, 128, 320, 512]
 model = dict(
     type='ATSS',
     backbone=dict(
-        type='VAN',
+        type='VAN_Official',
         depths=[3, 3, 12, 3],
         drop_path_rate=0.2,
         embed_dims=dims,
         norm_cfg=norm_cfg,
-        init_cfg=dict(type='Pretrained', checkpoint='/content/models/van_small_811.pth.tar'),
+        init_cfg=dict(type='Pretrained', checkpoint='/home/nils/VAN-Detection/models/van_base_828.pth.tar'),
     ),
     neck=[
         dict(
@@ -67,9 +67,9 @@ model = dict(
 
 log_config = dict(
     hooks=[
-        dict(type='TextLoggerHook', by_epoch=False),
+        dict(type='TextLoggerHook', by_epoch=True, reset_flag=True),
         dict(type='MMDetWandbHook', 
-          by_epoch=False, 
+          by_epoch=True, 
           init_kwargs=dict(
             entity="nkoch-aitastic",
             project='van-detection', 
@@ -92,8 +92,4 @@ log_config = dict(
 
 # optimizer
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
-# runtime settings
-interval = 4000
-# runner = dict(type='IterBasedRunner', max_iters=10*interval)
-checkpoint_config = dict(by_epoch=False, interval=interval, max_keep_ckpts=3)
-evaluation = dict(interval=interval, metric=['bbox'])
+evaluation = dict(interval=1, metric=['bbox'])
