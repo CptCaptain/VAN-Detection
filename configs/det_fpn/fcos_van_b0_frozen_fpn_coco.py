@@ -14,7 +14,7 @@ model = dict(
 
 log_config = dict(
     hooks=[
-        dict(type='TextLoggerHook', by_epoch=False),
+        dict(type='TextLoggerHook', by_epoch=False, reset_flag=True),
         dict(type='MMDetWandbHook', 
           by_epoch=False, 
           init_kwargs=dict(
@@ -24,6 +24,7 @@ log_config = dict(
               'backbone:VAN-B0', 
               'neck:FPN',
               'head:FCOS', 
+              'schedule:1x-adam',
               'pretrained',
               'frozen-backbone'
               ]       
