@@ -5,7 +5,7 @@ _base_ = [
 norm_cfg = dict(type='SyncBN', requires_grad=False)
 model = dict(
     backbone=dict(
-        init_cfg=dict(type='Pretrained', checkpoint='/content/models/van_small_811.pth.tar'),
+        init_cfg=dict(type='Pretrained', checkpoint='/home/nils/VAN-Detection/models/van_base_828.pth.tar'),
         frozen=True,
         norm_cfg=norm_cfg,
       ),
@@ -14,7 +14,7 @@ model = dict(
 
 log_config = dict(
     hooks=[
-        dict(type='TextLoggerHook', by_epoch=False),
+        dict(type='TextLoggerHook', by_epoch=False, reset_flag=True),
         dict(type='MMDetWandbHook', 
           by_epoch=False, 
           init_kwargs=dict(
