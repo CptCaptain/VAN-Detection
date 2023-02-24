@@ -8,13 +8,14 @@ _base_ = [
 
 dims = [32, 64, 160, 256]
 pretrained = dict(type='Pretrained', checkpoint='models/van_tiny_754.pth.tar')
+# pretrained = None
 norm_cfg = dict(type='SyncBN', requires_grad=not bool(pretrained))  # train BN only when not using pretrained model
 
 
 model = dict(
     type='FCOS',
     backbone=dict(
-        type='VAN',
+        type='VAN_Official',
         embed_dims=dims,
         drop_rate=0.0,
         drop_path_rate=0.1,
