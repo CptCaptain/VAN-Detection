@@ -9,7 +9,7 @@ model = dict(
     backbone=dict(
         embed_dims=dims,
         depths=[3, 3, 12, 3],
-        init_cfg=dict(type='Pretrained', checkpoint='models/van_small_811.pth.tar'),
+        init_cfg=dict(type='Pretrained', checkpoint='/content/models/van_base_828.pth.tar'),
         drop_path_rate=0.2,
         act_layer='GELU',
         ),
