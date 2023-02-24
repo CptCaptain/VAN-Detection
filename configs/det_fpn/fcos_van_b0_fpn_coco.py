@@ -2,7 +2,7 @@ _base_ = [
     '../_base_/models/fcos_van_fpn.py',
     '../_base_/datasets/coco_detection.py',
     '../_base_/default_runtime.py',    
-    '../_base_/schedules/schedule_4k.py',
+    '../_base_/schedules/schedule_1x_adam.py',
 ]
 
 dims = [32, 64, 160, 256]
@@ -13,7 +13,7 @@ norm_cfg = dict(type='SyncBN', requires_grad=not bool(pretrained))  # train BN o
 model = dict(
     type='FCOS',
     backbone=dict(
-        type='VAN',
+        type='VAN_Official',
         embed_dims=dims,
         drop_rate=0.0,
         drop_path_rate=0.1,
