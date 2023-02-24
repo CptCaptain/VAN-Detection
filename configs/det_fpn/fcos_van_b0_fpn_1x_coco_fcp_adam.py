@@ -67,30 +67,32 @@ model = dict(
         max_per_img=100)
         )
 
+hooks=[
+    dict(type='TextLoggerHook', by_epoch=True),
+    dict(type='MMDetWandbHook', 
+      by_epoch=True, 
+      init_kwargs=dict(
+        entity="nkoch-aitastic",
+        project='van-detection', 
+        tags=[
+          'backbone:VAN-B0', 
+          'neck:FPN',
+          'head:FCOS', 
+          'pretrained',
+          'schedule:1x',
+          'finetune-copy-paste',
+          ]       
+      ),
+      interval=10,
+      log_checkpoint=True,
+      log_checkpoint_metadata=True,
+      num_eval_images=100,
+    ), # Check https://docs.wandb.ai/ref/python/init for more init arguments.
+    ]
 
 log_config = dict(
-    hooks=[
-        dict(type='TextLoggerHook', by_epoch=True),
-        dict(type='MMDetWandbHook', 
-          by_epoch=True, 
-          init_kwargs=dict(
-            entity="nkoch-aitastic",
-            project='van-detection', 
-            tags=[
-              'backbone:VAN-B0', 
-              'neck:FPN',
-              'head:FCOS', 
-              'pretrained',
-              'schedule:1x',
-              'finetune-copy-paste',
-              ]       
-          ),
-          interval=10,
-          log_checkpoint=True,
-          log_checkpoint_metadata=True,
-          num_eval_images=100,
-        ), # Check https://docs.wandb.ai/ref/python/init for more init arguments.
-    ])
+    hooks=hooks,
+    )
 
-  
 data = dict(samples_per_gpu=4)
+
