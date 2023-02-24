@@ -5,6 +5,9 @@ from mmdet.datasets import PIPELINES, build_dataset
 from mmdet.core import BitmapMasks
 import mmcv
 
+import lovely_tensors as lt
+lt.monkey_patch()
+
 @PIPELINES.register_module()
 class FineTuneCopyPaste:
     """
@@ -29,7 +32,7 @@ class FineTuneCopyPaste:
     7. Append selected source bboxes, masks, and labels.
     Args:
         supl_dataset_cfg (dict): Dataset config to be used for the supplemental
-            Dataset. Includes Pipeline.
+            Dataset. Must include Pipeline.
             Default: None.      (set this yourself)
         copy_paste_chance (float): Apply this only to a subset of images to avoid
             severely unbalancing the dataset.
