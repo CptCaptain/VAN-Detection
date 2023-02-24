@@ -171,6 +171,12 @@ def retrieve_data_cfg(config_path, skip_type):
     update_data_root(cfg)
 
     train_data_cfg = cfg.data.train
+
+    # set ann files for validation split
+    train_data_cfg['dataset']['ann_file'] = '/home/nils/VAN-Detection/datasets/coco/annotations/instances_val2017.json'
+    train_data_cfg['dataset']['img_prefix'] = '/home/nils/VAN-Detection/datasets/coco/val2017/'
+    train_data_cfg['pipeline'][0]['supl_dataset_cfg']['ann_file'] = '/home/nils/datasets/cars/coco/val.json'
+
     while 'dataset' in train_data_cfg and train_data_cfg[
         'type'] != 'MultiImageMixDataset':
         train_data_cfg = train_data_cfg['dataset']
@@ -228,30 +234,19 @@ def main():
         zipper = zip(
             gt_bboxes,
             gt_labels,
-            # gt_masks,
             gt_masks,
-            # item['gt_masks']['areas'],
-            # item['ann_info']['masks'],
         )
 
         # Step three: generate annotation infos
-        # for i, (bbox, label, mask, area) in enumerate(zipper):
         for i, (bbox, label, mask) in enumerate(zipper):
-        # for i, (bbox, label) in enumerate(zipper):
             bbox = [bbox[0], bbox[1], bbox[2]-bbox[0], bbox[3] - bbox[1]]
-            # TODO FIXME figure out how to fix this shit
-            # _, segmentations = create_sub_mask_annotation(sub_mask)
             ann_info = {
                 'image_id': image_id,
                 'category_id': label,
                 'bbox': bbox,
-                # 'ignore': True,     # Don't adjust bounding boxes?
-                # 'area': (bbox[2] - bbox[0]) * (bbox[3] - bbox[1]),
                 'area': 10.,
                 'iscrowd': 0,
                 'segmentation': [],
-                # 'segmentation': mask,   # This get huge and empty, investigate or ignore
-                # 'segmentation': segmentations,   # This get huge and empty, investigate or ignore
                 'id': annotation_id,
             }
             annotations.append(ann_info)
