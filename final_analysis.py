@@ -2,6 +2,9 @@ import os
 import json
 import wandb
 import subprocess
+import re
+from tqdm import tqdm
+
 from functools import lru_cache
 
 # Set up output directories and paths
@@ -30,13 +33,21 @@ def get_run_name(run_id):
     run = get_run(run_id)
     return run.name
 
+# Get tags of run
+def get_run_tags(run_id):
+    run = get_run(run_id)
+    return run.tags
+
 # Function to download the checkpoint using W&B API
 def download_checkpoint(run_path, artifact_name, checkpoint_path):
+    if os.path.exists(checkpoint_path):
+        return
+
     api = wandb.Api()
     run = get_run(run_path)
     artifact = api.artifact(f'{run_path.rsplit("/", 1)[0]}/{artifact_name}')
     artifact_dir = artifact.download()
-    checkpoint_file = os.path.join(artifact_dir, "epoch_12.pth") # Replace with the correct file name in the artifact
+    checkpoint_file = [f'{artifact_dir}/{f}' for f in os.listdir(artifact_dir) if f.endswith('.pth')][0] # Replace with the correct file name in the artifact
 
     # Move the downloaded checkpoint to the desired path
     os.rename(checkpoint_file, checkpoint_path)
@@ -52,6 +63,10 @@ def json_to_python(obj):
         # special case for renamed models
         if obj.get('type') == 'VAN':
             obj['type'] = 'VAN_Official'
+        for k, v in obj.items():
+            if isinstance(v, str) and v.startswith('/content/'):
+                obj[k] = obj[k].replace('/content/', '')
+                obj[k] = obj[k].replace('test2017', 'val2017')
         return {k: json_to_python(v) for k, v in obj.items()}
     elif isinstance(obj, list):
         return [json_to_python(elem) for elem in obj]
@@ -70,8 +85,47 @@ def write_config_file(config_dict, config_path):
                 f.write(f"{key} = {value}\n")
 
 # Function to run the test script and store the results
-def run_test_script(config_path, checkpoint_path, result_path):
-    subprocess.run(["python", "test.py", config_path, checkpoint_path, "--out", result_path])
+def run_test_script(config_path, checkpoint_path, result_path, eval=False):
+    print('Running test.py')
+    if eval:
+        out = [
+            "--out",
+            result_path + '.pkl',
+            "--eval",
+            "bbox",
+        ]
+    else:
+        out = [
+            "--format-only",
+            "--eval-options",
+            f"jsonfile_prefix={result_path}",
+        ]
+    with open(result_path + '_test_stdout.txt', 'w') as f:
+        subprocess.run([
+            "python",
+            "test.py",
+            config_path,
+            checkpoint_path,
+            *out,
+        ], stdout=f)
+
+# Function to test for robustness
+def run_robustness_test(config_path, checkpoint_path, result_path, img_dir):
+    print('Running test_robustness.py')
+    with open(result_path + '_robustness.txt', 'w') as f:
+        subprocess.run([
+            "python",
+            "mmdetection/tools/analysis_tools/test_robustness.py",
+            config_path,
+            checkpoint_path,
+            "--out",
+            result_path + "_test_robustness.pkl",
+            "--eval",
+            "bbox",
+            "--show-dir",
+            img_dir,
+        ], stdout=f)
+
 
 # Function to run further analysis and store the results
 def run_analysis(config_path, result_path, analysis_output_dir):
@@ -83,45 +137,118 @@ def run_analysis(config_path, result_path, analysis_output_dir):
     with open(os.path.join(analysis_output_dir, "get_flops.txt"), "w") as f:
         subprocess.run(["python", f"{tool_path}/get_flops.py", config_path], stdout=f)
 
-    # # COCO error analysis
-    # this might need results in json format
-    # with open(os.path.join(analysis_output_dir, "coco_error_analysis.txt"), "w") as f:
-        # subprocess.run(["python", f"{tool_path}/coco_error_analysis.py", result_path, analysis_output_dir], stdout=f)
+    # COCO error analysis
+    with open(os.path.join(analysis_output_dir, "coco_error_analysis.txt"), "w") as f:
+        subprocess.run(["python", f"{tool_path}/coco_error_analysis.py", result_path + '.bbox.json', analysis_output_dir], stdout=f)
+
+    # Robustness
+    # print('Evaluating robustness')
+    # with open(os.path.join(analysis_output_dir, "robustness_eval.txt"), "w") as f:
+        # subprocess.run(["python", f"{tool_path}/robustness_eval.py", result_path + '_test_robustness.pkl'], stdout=f)
 
     # Benchmark
     print('Benchmarking')
     os.environ['LOCAL_RANK'] = "0"
     with open(os.path.join(analysis_output_dir, "benchmark.txt"), "w") as f:
+        print(' '.join(["python", "-m", "torch.distributed.launch", "--nproc_per_node=1", "--master_port=29500",
+                        f"{tool_path}/benchmark.py", config_path, checkpoint_path]))
         subprocess.run(["python", "-m", "torch.distributed.launch", "--nproc_per_node=1", "--master_port=29500",
-                        f"{tool_path}/benchmark.py", config_path, checkpoint_path], stdout=f)
+                        f"{tool_path}/benchmark.py", config_path, checkpoint_path, '--launcher', 'pytorch'], stdout=f)
+
+def analyze_and_summarize(run_name, analysis_dir):
+    summary = {'run_name': run_name}
+    
+    # Read benchmark.txt
+    with open(os.path.join(analysis_dir, run_name, "benchmark.txt"), "r") as f:
+        content = f.read()
+        overall_fps = re.search(r'Overall fps: (.+?) img', content)
+        if overall_fps:
+            summary['overall_fps'] = float(overall_fps.group(1))
+    
+    # Read get_flops.txt
+    with open(os.path.join(analysis_dir, run_name, "get_flops.txt"), "r") as f:
+        content = f.read()
+        flops = re.search(r'Flops: (.+?) GFLOPs', content)
+        params = re.search(r'Params: (.+?) M', content)
+        if flops:
+            summary['flops'] = float(flops.group(1))
+        if params:
+            summary['params'] = float(params.group(1))
+    
+    # Read the results file
+    result_file = os.path.join("eval_dir", "results", f"{run_name}_test_stdout.txt")
+    with open(result_file, "r") as f:
+        content = f.read()
+        bbox_mAP = re.search(r'\(\'bbox_mAP\', (.+?)\)', content)
+        if bbox_mAP:
+            summary['bbox_mAP'] = float(bbox_mAP.group(1))
+    
+    return summary
+
 
 # Iterate through the list of run ids
 run_list = [
+        'yhzvynse',
+        '2qye2dk2',
+        'ueyirz6u',
+        '3ouwht0k',
+        'pp7kvoso',
+        '36ttdhnx',
+        '5x8ayzxs',
         '111lxdne',
         '1vitd2f2',
         ]
 
-for run_id in run_list:
+# First, load all checkpoints
+print('Preparing checkpoints and configs')
+for run_id in tqdm(run_list):
+    run_path = f'nkoch-aitastic/van-detection/{run_id}'
+    run_name = get_run_name(run_path)
+    config = get_run_config(run_path)
+    checkpoint_path = os.path.join(configs_dir, f"{run_name}.pth")
+    config_path = os.path.join(configs_dir, f"{run_name}.py")
+
+    # Download checkpoint
+    download_checkpoint(run_path, f'run_{run_id}_model:latest', checkpoint_path)
+    # Write config file
+    write_config_file(config, config_path)
+
+all_summaries = {}
+# Then evaluate
+print('Running evaluation')
+for run_id in tqdm(run_list):
     run_path = f'nkoch-aitastic/van-detection/{run_id}'
     run_name = get_run_name(run_path)
     config = get_run_config(run_path)
 
     config_path = os.path.join(configs_dir, f"{run_name}.py")
     checkpoint_path = os.path.join(configs_dir, f"{run_name}.pth")
-    result_path = os.path.join(results_dir, f"{run_name}.pkl")
+    result_path = os.path.join(results_dir, f"{run_name}")
     analysis_output_dir = os.path.join(analysis_dir, run_name)
-
-    # Download checkpoint
-    download_checkpoint(run_path, f'run_{run_id}_model:latest', checkpoint_path)
-
-    # Write config file
-    write_config_file(config, config_path)
+    robustness_dir = os.path.join(analysis_output_dir, 'robustness')
 
     # Run the test script and store the results
-    if not os.path.exists(result_path):
+    # if not os.path.exists(result_path):
         # only run test script if we don't have results already, it's expensive
-        run_test_script(config_path, checkpoint_path, result_path)
+    # run_test_script(config_path, checkpoint_path, result_path)
+    # run_test_script(config_path, checkpoint_path, result_path, eval=True)
+
+    # Test robustness, results are analysed later
+    # takes a long time, do whenever
+    # run_robustness_test(config_path, checkpoint_path, result_path, robustness_dir)
 
     # Run further analysis and store the results
     run_analysis(config_path, result_path, analysis_output_dir)
+
+    # Analyze and summarize
+    summary = analyze_and_summarize(run_name, "eval_dir/analysis")
+    all_summaries[run_name] = {
+            'run_id': run_id,
+            'summary': summary,
+            'tags': get_run_tags(run_path),
+            }
+
+# Print or store the summaries
+with open(results_dir + '/summary.json', 'w') as f:
+    json.dump(all_summaries, f)
 
