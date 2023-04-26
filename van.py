@@ -158,7 +158,7 @@ class OverlapPatchEmbed(nn.Module):
 
 
 @BACKBONES.register_module()
-class VAN(BaseModule):
+class VAN_Official(BaseModule):
     def __init__(self,
                  in_chans=3,
                  embed_dims=[64, 128, 256, 512],
@@ -173,12 +173,12 @@ class VAN(BaseModule):
                  init_cfg=None,
                  frozen=False,
                  norm_cfg=dict(type='SyncBN', requires_grad=True)):
-        super(VAN, self).__init__(init_cfg=init_cfg)
+        super(VAN_Official, self).__init__(init_cfg=init_cfg)
 
         if act_layer == 'StarReLU':
-          act_layer = StarReLU
+            act_layer = StarReLU
         else:
-          act_layer = nn.GELU
+            act_layer = nn.GELU
 
         assert not (init_cfg and pretrained), \
             'init_cfg and pretrained cannot be set at the same time'
@@ -233,7 +233,7 @@ class VAN(BaseModule):
                     normal_init(
                         m, mean=0, std=math.sqrt(2.0 / fan_out), bias=0)
         else:
-            super(VAN, self).init_weights()
+            super(VAN_Official, self).init_weights()
 
     def forward(self, x):
         B = x.shape[0]

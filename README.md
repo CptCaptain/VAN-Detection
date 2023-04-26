@@ -1,11 +1,10 @@
 # Visual Attention Network (VAN) for Detection
 
-This repo is a PyTorch implementation of applying **VAN** (**Visual Attention Network**) to 2D Object Detection.
-The code is based on [mmdet](https://github.com/open-mmlab/mmdetection).
+This repo is a PyTorch implementation applying **VAN** (**Visual Attention Network**) to 2D Object Detection.
+Our implementation is mainly based on [VAN-Segmentation](https://github.com/Visual-Attention-Network/VAN-Segmentation) and [MMDetection](https://github.com/open-mmlab/mmdetection).
+Thanks to the authors.
 
-## THIS IS STILL VERY MUCH **WIP**
-
-More details can be found in [**Visual Attention Network**](https://arxiv.org/abs/2202.09741).
+More details about the VAN can be found in [**Visual Attention Network**](https://arxiv.org/abs/2202.09741).
 
 ## Citation
 
@@ -17,51 +16,31 @@ More details can be found in [**Visual Attention Network**](https://arxiv.org/ab
   year={2022}
 }
 ```
-
-## Results
-
-**Notes**: Pre-trained models can be found in [TsingHua Cloud](https://cloud.tsinghua.edu.cn/d/0100f0cea37d41ba8d08/).
-
-### VAN + UperNet
-
-|   Method  |    Backbone     |  Pretrained | Iters | mIoU(ms) | Params | FLOPs  | Config | Download  |
-| :-------: | :-------------: | :-----: | :---: | :--: | :----: | :----: | :----: | :-------: |
-|  UperNet  |    VAN-B0  | IN-1K | 160K | 41.1 | 32M | - | [config](https://github.com/Visual-Attention-Network/VAN-Segmentation/blob/main/configs/upernet/1k_pretrained/upernet_van_b0_512x512_160k_ade20k.py)  | - |
-|  UperNet  |    VAN-B1  | IN-1K  | 160K |  44.9  | 44M | - | [config](https://github.com/Visual-Attention-Network/VAN-Segmentation/blob/main/configs/upernet/1k_pretrained/upernet_van_b1_512x512_160k_ade20k.py)  | - |
-|  UperNet  |    VAN-B2  | IN-1K  | 160K |  50.1 | 57M | 948G | [config](https://github.com/Visual-Attention-Network/VAN-Segmentation/blob/main/configs/upernet/1k_pretrained/upernet_van_b2_512x512_160k_ade20k.py)  | [TsingHua Cloud](https://cloud.tsinghua.edu.cn/f/68c8b494f3824d30bf07/?dl=1) |
-|  UperNet  |    VAN-B3  | IN-1K  | 160K |  50.6 | 75M | 1030G | [config](https://github.com/Visual-Attention-Network/VAN-Segmentation/blob/main/configs/upernet/1k_pretrained/upernet_van_b3_512x512_160k_ade20k.py)  | [TsingHua Cloud](https://cloud.tsinghua.edu.cn/f/97bde65fbe334b358797/?dl=1) |
-|  UperNet  |    VAN-B4  | IN-1K  | 160K |  52.2 |  90M | 1098G | [config](https://github.com/Visual-Attention-Network/VAN-Segmentation/blob/main/configs/upernet/1k_pretrained/upernet_van_b4_512x512_160k_ade20k.py)  | [TsingHua Cloud](https://cloud.tsinghua.edu.cn/f/5273f92c77a94395b804/?dl=1) |
-|  UperNet  |    VAN-B4  | IN-22K | 160K |  53.5 | 90M  | 1098G | [config](https://github.com/Visual-Attention-Network/VAN-Segmentation/blob/main/configs/upernet/22k_pretrained/upernet_van_b4_512x512_160k_ade20k_22k.py)  | [TsingHua Cloud](https://cloud.tsinghua.edu.cn/f/8f1f0a9c4c71478fa43b/?dl=1) |
-|  UperNet  |    VAN-B5  | IN-22K | 160K |  53.9 |  117M | 1208G | [config](https://github.com/Visual-Attention-Network/VAN-Segmentation/blob/main/configs/upernet/22k_pretrained/upernet_van_b5_512x512_160k_ade20k_22k.py)  | [TsingHua Cloud](https://cloud.tsinghua.edu.cn/f/2175bdc39d094e5f8f99/?dl=1) |
-|  UperNet  |    VAN-B6  | IN-22K | 160K |  54.7 | 231M | 1658G | [config](https://github.com/Visual-Attention-Network/VAN-Segmentation/blob/main/configs/upernet/22k_pretrained/upernet_van_b6_512x512_160k_ade20k_22k.py)  | [TsingHua Cloud](https://cloud.tsinghua.edu.cn/f/853d9d0ea0f44c2aa090/?dl=1) |
-
-**Notes**: In this scheme, we use multi-scale validation following Swin-Transformer. FLOPs are tested under the input size of 2048 $\times$ 512 using [torchprofile](https://github.com/zhijian-liu/torchprofile) (recommended, highly accurate and automatic MACs/FLOPs statistics).
-
-### VAN + Semantic FPN
-
-|    Backbone     | Iters | mIoU | Config | Download  |
-| :-------------: | :-----: | :------: | :------------: | :----: |
-|    VAN-Tiny     | 40K | 38.5 |  [config](https://github.com/Visual-Attention-Network/VAN-Segmentation/blob/main/configs/sem_fpn/fpn_van_b0_ade20k_40k.py)  | [Google Drive](https://drive.google.com/file/d/1Jl8LtyvOl6xeNMKCjpK2Rp_tGRfua8LJ/view?usp=sharing) |
-|    VAN-Small    | 40K |  42.9  |  [config](https://github.com/Visual-Attention-Network/VAN-Segmentation/blob/main/configs/sem_fpn/fpn_van_b1_ade20k_40k.py)  | [Google Drive](https://drive.google.com/file/d/1Xfuo9D3Fo7b6zSCLTWE77k2jgYSHVSb8/view?usp=sharing) |
-|    VAN-Base     | 40K | 46.7   |  [config](https://github.com/Visual-Attention-Network/VAN-Segmentation/blob/main/configs/sem_fpn/fpn_van_b2_ade20k_40k.py)  | [Google Drive](https://drive.google.com/file/d/1Ar4Hq9DjgaULQKfwM-jJvSO-D6gendpf/view?usp=sharing) |
-|    VAN-Large    | 40K |  48.1  |  [config](https://github.com/Visual-Attention-Network/VAN-Segmentation/blob/main/configs/sem_fpn/fpn_van_b3_ade20k_40k.py)  | [Google Drive](https://drive.google.com/file/d/1v61uCi07IC6eyVHn3xbJqz4nOiGa1POY/view?usp=sharing) |
-
 ## Preparation
 
 Install MMDetection and download COCO according to the guidelines in MMDetection.
 
-## Requirement
+## Requirements
+
+We recommend following the official instructions for installing the Open-MMLab libraries, using mim. Otherwise, version mismatches are likely.
 
 ```
-pip install wandb timm pycocotools mmcv-full==1.6.2 mmdet==2.25.2
+pip install wandb timm pycocotools openmim
 ```
+
+```
+mim install mmcv-full==1.7.1 mmdet==2.27.0
+```
+
+As getting the correct sets of versions correct can be tricky, we provide the exact enviroments used in our tests in the `conda-freeze.txt` respective `pip-freeze.txt`.
+We used [our own fork of MMDetection](https://github.com/CptCaptain/mmdetection) for our adapted copy-paste mechanism and our evaluation. (@commit 9e62e9b4f05aedf5b0b28e5c7619ef8e89097cc1)
 
 ## Training
 
-We use 8 GPUs for training by default. Run:
+We use 3 GPUs for training by default. Run:
 
 ```bash
-./dist_train.sh /path/to/config 8
+./dist_train.sh /path/to/config 3
 ```
 
 ## Evaluation
@@ -69,7 +48,7 @@ We use 8 GPUs for training by default. Run:
 To evaluate the model, run:
 
 ```bash
-./dist_test.sh /path/to/config /path/to/checkpoint_file 8 --eval bbox
+./dist_test.sh /path/to/config /path/to/checkpoint_file 3 --eval bbox
 ```
 
 ## FLOPs
@@ -83,13 +62,14 @@ pip install torchprofile
 To calculate FLOPs for a model, run:
 
 ```bash
-bash tools/flops.sh /path/to/config --shape 512 512
+bash tools/flops.sh /path/to/config --shape 1333 800
 ```
 
+In our evaluation, we used the updated analysis tools of our MMDetection fork.
 
 ## Acknowledgment
 
-Our implementation is mainly based on [VAN-Segmentation](https://github.com/Visual-Attention-Network/VAN-Segmentation). Thanks to the authors.
+Our implementation is mainly based on [VAN-Segmentation](https://github.com/Visual-Attention-Network/VAN-Segmentation) and [MMDetection](https://github.com/open-mmlab/mmdetection). Thanks to the authors.
 
 ## LICENSE
 

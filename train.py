@@ -90,7 +90,7 @@ def parse_args():
         choices=['none', 'pytorch', 'slurm', 'mpi'],
         default='none',
         help='job launcher')
-    parser.add_argument('--local_rank', type=int, default=0)
+    parser.add_argument('--local_rank', type=int, default=3)
     parser.add_argument(
         '--auto-resume',
         action='store_true',
@@ -98,6 +98,8 @@ def parse_args():
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
+    else:
+        args.local_rank = os.environ['LOCAL_RANK']
 
     if args.options and args.cfg_options:
         raise ValueError(
@@ -113,6 +115,7 @@ def parse_args():
 
 
 def main():
+    wandb.require('service')
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
@@ -159,8 +162,11 @@ def main():
         init_dist(args.launcher, **cfg.dist_params)
         # gpu_ids is used to calculate iter when resuming checkpoint
         _, world_size = get_dist_info()
+        
+        # get_dist_info doesn't return what I want...
+        # world_size = int(os.environ['LOCAL_RANK'])
         cfg.gpu_ids = range(world_size)
-
+        
     # create work_dir
     mmcv.mkdir_or_exist(osp.abspath(cfg.work_dir))
     # dump config
@@ -222,11 +228,12 @@ def main():
         model = revert_sync_batchnorm(model)
 
     logger.info(model)
-
+    
     datasets = [build_dataset(cfg.data.train)]
     if len(cfg.workflow) == 2:
         val_dataset = copy.deepcopy(cfg.data.val)
-        val_dataset.pipeline = cfg.data.train.pipeline
+        # val_dataset.pipeline = cfg.data.train.pipeline
+        val_dataset.pipeline = cfg.data.val.pipeline
         datasets.append(build_dataset(val_dataset))
     if cfg.checkpoint_config is not None:
         # save mmseg version, config file content and class names in

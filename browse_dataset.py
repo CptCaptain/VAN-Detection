@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import argparse
 import os
-from collections import Sequence
+from collections.abc import Sequence
 from pathlib import Path
 
 import mmcv
@@ -17,6 +17,7 @@ from mmdet.utils import replace_cfg_vals, update_data_root
 def parse_args():
     parser = argparse.ArgumentParser(description='Browse a dataset')
     parser.add_argument('config', help='train config file path')
+    parser.add_argument('--no-masks', action='store_true')
     parser.add_argument(
         '--skip-type',
         type=str,
@@ -97,13 +98,14 @@ def main():
 
         gt_bboxes = item['gt_bboxes']
         gt_labels = item['gt_labels']
-        gt_masks = item.get('gt_masks', None)
-        gt_masks = None
+        if args.no_masks:
+            gt_masks = None
+        else:
+            gt_masks = item.get('gt_masks', None)
         if gt_masks is not None:
             gt_masks = mask2ndarray(gt_masks)
 
-        # gt_seg = item.get('gt_semantic_seg', None)
-        gt_seg = None
+        gt_seg = item.get('gt_semantic_seg', None)
         if gt_seg is not None:
             pad_value = 255  # the padding value of gt_seg
             sem_labels = np.unique(gt_seg)
