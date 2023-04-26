@@ -1,22 +1,20 @@
 _base_ = [
-    'fcos_van_b0_fpn_coco.py',
+    'fcos_van_b0_fpn_dcn_1x_coco_adam_scp_bof.py',
 ]
 
 norm_cfg = dict(type='SyncBN', requires_grad=False)
 model = dict(
     backbone=dict(
-        init_cfg=dict(type='Pretrained', checkpoint='models/van_tiny_754.pth.tar'),
-        frozen=True,
-        norm_cfg=norm_cfg,
+        frozen_stages=3,
       ),
     )
 
 
 log_config = dict(
     hooks=[
-        dict(type='TextLoggerHook', by_epoch=False, reset_flag=True),
+        dict(type='TextLoggerHook', by_epoch=True, reset_flag=True),
         dict(type='MMDetWandbHook', 
-          by_epoch=False, 
+          by_epoch=True, 
           init_kwargs=dict(
             entity="nkoch-aitastic",
             project='van-detection', 
@@ -37,4 +35,5 @@ log_config = dict(
     ])
 
   
+workflow=[('train', 12),]
 

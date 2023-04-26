@@ -14,9 +14,9 @@ model = dict(
 
 log_config = dict(
     hooks=[
-        dict(type='TextLoggerHook', by_epoch=False, reset_flag=True),
+        dict(type='TextLoggerHook', by_epoch=True, reset_flag=True),
         dict(type='MMDetWandbHook', 
-          by_epoch=False, 
+          by_epoch=True, 
           init_kwargs=dict(
             entity="nkoch-aitastic",
             project='van-detection', 
@@ -25,6 +25,7 @@ log_config = dict(
               'neck:FPN',
               'head:FCOS', 
               'pretrained',
+              'schedule:1x-adam',
               'frozen-backbone'
               ]       
           ),
@@ -35,5 +36,5 @@ log_config = dict(
         ), # Check https://docs.wandb.ai/ref/python/init for more init arguments.
     ])
 
-  
+runner = dict(type='EpochBasedRunner', max_epochs=12)
 

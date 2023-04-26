@@ -12,11 +12,9 @@ model = dict(
     type='FCOS',
     backbone=dict(
         type='VAN',
-        embed_dims=dims,
-        drop_rate=0.0,
-        drop_path_rate=0.1,
-        depths=[3, 3, 5, 2],
-        norm_cfg=norm_cfg,
+        arch='b0',
+        out_indices = [0, 1, 2, 3],
+        # norm_cfg=norm_cfg,
         init_cfg=pretrained,
       ),
     neck=dict(
