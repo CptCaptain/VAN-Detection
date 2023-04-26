@@ -38,6 +38,14 @@ def get_run_tags(run_id):
     run = get_run(run_id)
     return run.tags
 
+def get_run_gpu_ids(run_id):
+    run = get_run(run_id)
+    return run.config['gpu_ids']
+
+def get_run_runtime_hours(run_id):
+    run = get_run(run_id)
+    return run.summary['_wandb']['runtime']/3600
+
 # Function to download the checkpoint using W&B API
 def download_checkpoint(run_path, artifact_name, checkpoint_path):
     if os.path.exists(checkpoint_path):
@@ -133,11 +141,12 @@ def run_analysis(config_path, result_path, analysis_output_dir):
     tool_path = 'mmdetection/tools/analysis_tools'
     
     # Get FLOPs
-    print('Calculating complexity')
+    print('Calculating Complexity')
     with open(os.path.join(analysis_output_dir, "get_flops.txt"), "w") as f:
         subprocess.run(["python", f"{tool_path}/get_flops.py", config_path], stdout=f)
 
     # COCO error analysis
+    print('Analyzing Errors')
     with open(os.path.join(analysis_output_dir, "coco_error_analysis.txt"), "w") as f:
         subprocess.run(["python", f"{tool_path}/coco_error_analysis.py", result_path + '.bbox.json', analysis_output_dir], stdout=f)
 
@@ -162,18 +171,39 @@ def analyze_and_summarize(run_name, analysis_dir):
     with open(os.path.join(analysis_dir, run_name, "benchmark.txt"), "r") as f:
         content = f.read()
         overall_fps = re.search(r'Overall fps: (.+?) img', content)
+        mem_use = re.search(r'Max cuda memory: (.+?)MB', content) 
         if overall_fps:
             summary['overall_fps'] = float(overall_fps.group(1))
+            summary['latency_ms'] = 1000/float(overall_fps.group(1))
+        if mem_use:
+            summary['cuda_mem_mb'] = int(mem_use.group(1))
     
     # Read get_flops.txt
     with open(os.path.join(analysis_dir, run_name, "get_flops.txt"), "r") as f:
         content = f.read()
+        # Extract totals
         flops = re.search(r'Flops: (.+?) GFLOPs', content)
         params = re.search(r'Params: (.+?) M', content)
         if flops:
-            summary['flops'] = float(flops.group(1))
+            summary['total_gflops'] = float(flops.group(1))
         if params:
-            summary['params'] = float(params.group(1))
+            summary['total_mparams'] = float(params.group(1))
+            
+        # Extract by part
+        flops_pattern = re.compile(r'\s\((backbone|neck|head])\):\s(\w+)\(\s+(\d+\.\d+) M,\s+(\d+\.\d+)% Params,\s+(\d+\.\d+) GFLOPs,\s+(\d+\.\d+)% FLOPs,')
+        flops_data = flops_pattern.findall(content)
+
+        flops_dict = {}
+        for part, part_type, params, params_percentage, flops, flops_percentage in flops_data:
+            flops_dict[part] = {
+                "type": part_type,
+                "flops": float(flops),
+                "params": float(params),
+                "flops_percentage": float(flops_percentage),
+                "params_percentage": float(params_percentage),
+            }
+
+        summary['complexity'] = flops_dict
     
     # Read the results file
     result_file = os.path.join("eval_dir", "results", f"{run_name}_test_stdout.txt")
@@ -189,7 +219,9 @@ def analyze_and_summarize(run_name, analysis_dir):
 # Iterate through the list of run ids
 run_list = [
         'yhzvynse',
-        '2qye2dk2',
+        # '2qye2dk2',       # this one was still iterbased, not 1x schedule
+        'uzmmca92',         # replaces 2qye2dk2
+        # '9z4ru3ey',         # frozen b2, has no model logged yet
         'ueyirz6u',
         '3ouwht0k',
         'pp7kvoso',
@@ -197,6 +229,7 @@ run_list = [
         '5x8ayzxs',
         '111lxdne',
         '1vitd2f2',
+        'xhgm8eyk',
         ]
 
 # First, load all checkpoints
@@ -213,7 +246,12 @@ for run_id in tqdm(run_list):
     # Write config file
     write_config_file(config, config_path)
 
-all_summaries = {}
+try:
+    with open(results_dir + '/bs_summary.json', 'w') as f:
+        all_summaries = json.load(f)
+except:
+    all_summaries = {}
+
 # Then evaluate
 print('Running evaluation')
 for run_id in tqdm(run_list):
@@ -228,10 +266,10 @@ for run_id in tqdm(run_list):
     robustness_dir = os.path.join(analysis_output_dir, 'robustness')
 
     # Run the test script and store the results
-    # if not os.path.exists(result_path):
+    if not os.path.exists(result_path):
         # only run test script if we don't have results already, it's expensive
-    # run_test_script(config_path, checkpoint_path, result_path)
-    # run_test_script(config_path, checkpoint_path, result_path, eval=True)
+        run_test_script(config_path, checkpoint_path, result_path)
+        run_test_script(config_path, checkpoint_path, result_path, eval=True)
 
     # Test robustness, results are analysed later
     # takes a long time, do whenever
@@ -246,9 +284,12 @@ for run_id in tqdm(run_list):
             'run_id': run_id,
             'summary': summary,
             'tags': get_run_tags(run_path),
+            'runtime_hours': get_run_runtime_hours(run_path),
+            'gpus': get_run_gpu_ids(run_path),
+            'train_gpu_hours': get_run_runtime_hours(run_path) * len(get_run_gpu_ids(run_path)),
             }
 
 # Print or store the summaries
-with open(results_dir + '/summary.json', 'w') as f:
+with open(results_dir + '/bs_summary.json', 'w') as f:
     json.dump(all_summaries, f)
 
