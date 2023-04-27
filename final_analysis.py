@@ -7,6 +7,9 @@ from tqdm import tqdm
 
 from functools import lru_cache
 
+
+rerun = True
+
 # Set up output directories and paths
 eval_dir = "eval_dir"
 configs_dir = os.path.join(eval_dir, "configs")
@@ -94,7 +97,7 @@ def write_config_file(config_dict, config_path):
 
 # Function to run the test script and store the results
 def run_test_script(config_path, checkpoint_path, result_path, eval=False):
-    print('Running test.py')
+    print(f'Running test.py for {config_path}')
     if eval:
         out = [
             "--out",
@@ -142,13 +145,17 @@ def run_analysis(config_path, result_path, analysis_output_dir):
     
     # Get FLOPs
     print('Calculating Complexity')
-    with open(os.path.join(analysis_output_dir, "get_flops.txt"), "w") as f:
-        subprocess.run(["python", f"{tool_path}/get_flops.py", config_path], stdout=f)
+    flops_path = os.path.join(analysis_output_dir, "get_flops.txt")
+    if os.path.exists(flops_path) or rerun:
+        with open(flops_path, "w") as f:
+            subprocess.run(["python", f"{tool_path}/get_flops.py", config_path], stdout=f)
 
     # COCO error analysis
     print('Analyzing Errors')
-    with open(os.path.join(analysis_output_dir, "coco_error_analysis.txt"), "w") as f:
-        subprocess.run(["python", f"{tool_path}/coco_error_analysis.py", result_path + '.bbox.json', analysis_output_dir], stdout=f)
+    errors_path = os.path.join(analysis_output_dir, "coco_error_analysis.txt")
+    if os.path.exists(errors_path) or rerun:
+        with open(errors_path, "w") as f:
+            subprocess.run(["python", f"{tool_path}/coco_error_analysis.py", result_path + '.bbox.json', analysis_output_dir], stdout=f)
 
     # Robustness
     # print('Evaluating robustness')
@@ -158,17 +165,20 @@ def run_analysis(config_path, result_path, analysis_output_dir):
     # Benchmark
     print('Benchmarking')
     os.environ['LOCAL_RANK'] = "0"
-    with open(os.path.join(analysis_output_dir, "benchmark.txt"), "w") as f:
-        print(' '.join(["python", "-m", "torch.distributed.launch", "--nproc_per_node=1", "--master_port=29500",
-                        f"{tool_path}/benchmark.py", config_path, checkpoint_path]))
-        subprocess.run(["python", "-m", "torch.distributed.launch", "--nproc_per_node=1", "--master_port=29500",
-                        f"{tool_path}/benchmark.py", config_path, checkpoint_path, '--launcher', 'pytorch'], stdout=f)
+    benchmark_path = os.path.join(analysis_output_dir, "benchmark.txt")
+    if os.path.exists(benchmark_path) or rerun:
+        with open(benchmark_path, "w") as f:
+            print(' '.join(["python", "-m", "torch.distributed.launch", "--nproc_per_node=1", "--master_port=29500",
+                            f"{tool_path}/benchmark.py", config_path, checkpoint_path]))
+            subprocess.run(["python", "-m", "torch.distributed.launch", "--nproc_per_node=1", "--master_port=29500",
+                            f"{tool_path}/benchmark.py", config_path, checkpoint_path, '--launcher', 'pytorch'], stdout=f)
 
-def analyze_and_summarize(run_name, analysis_dir):
-    summary = {'run_name': run_name}
+def analyze_and_summarize(run_name, analysis_dir, summary):
+    if len(summary) == 0:
+        summary = {'run_name': run_name}
     
     # Read benchmark.txt
-    with open(os.path.join(analysis_dir, run_name, "benchmark.txt"), "r") as f:
+    with open(os.path.join(analysis_dir, "benchmark.txt"), "r") as f:
         content = f.read()
         overall_fps = re.search(r'Overall fps: (.+?) img', content)
         mem_use = re.search(r'Max cuda memory: (.+?)MB', content) 
@@ -179,7 +189,7 @@ def analyze_and_summarize(run_name, analysis_dir):
             summary['cuda_mem_mb'] = int(mem_use.group(1))
     
     # Read get_flops.txt
-    with open(os.path.join(analysis_dir, run_name, "get_flops.txt"), "r") as f:
+    with open(os.path.join(analysis_dir, "get_flops.txt"), "r") as f:
         content = f.read()
         # Extract totals
         flops = re.search(r'Flops: (.+?) GFLOPs', content)
@@ -247,7 +257,7 @@ for run_id in tqdm(run_list):
     write_config_file(config, config_path)
 
 try:
-    with open(results_dir + '/bs_summary.json', 'w') as f:
+    with open(results_dir + '/bs_summary.json', 'r') as f:
         all_summaries = json.load(f)
 except:
     all_summaries = {}
@@ -258,6 +268,7 @@ for run_id in tqdm(run_list):
     run_path = f'nkoch-aitastic/van-detection/{run_id}'
     run_name = get_run_name(run_path)
     config = get_run_config(run_path)
+    summary = all_summaries.get(run_name, {}).get('summary', {})
 
     config_path = os.path.join(configs_dir, f"{run_name}.py")
     checkpoint_path = os.path.join(configs_dir, f"{run_name}.pth")
@@ -266,8 +277,9 @@ for run_id in tqdm(run_list):
     robustness_dir = os.path.join(analysis_output_dir, 'robustness')
 
     # Run the test script and store the results
-    if not os.path.exists(result_path):
+    if not os.path.exists(f'{result_path}_test_stdout.txt'):
         # only run test script if we don't have results already, it's expensive
+        print(f"{result_path=} does not exist")
         run_test_script(config_path, checkpoint_path, result_path)
         run_test_script(config_path, checkpoint_path, result_path, eval=True)
 
@@ -276,10 +288,10 @@ for run_id in tqdm(run_list):
     # run_robustness_test(config_path, checkpoint_path, result_path, robustness_dir)
 
     # Run further analysis and store the results
-    run_analysis(config_path, result_path, analysis_output_dir)
+    # run_analysis(config_path, result_path, analysis_output_dir)
 
     # Analyze and summarize
-    summary = analyze_and_summarize(run_name, "eval_dir/analysis")
+    summary = analyze_and_summarize(run_name, analysis_output_dir, summary)
     all_summaries[run_name] = {
             'run_id': run_id,
             'summary': summary,
